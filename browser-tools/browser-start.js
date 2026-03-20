@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, execSync } from "node:child_process";
+import { mkdirSync, rmSync } from "node:fs";
 import puppeteer from "puppeteer-core";
 
 const useProfile = process.argv[2] === "--profile";
@@ -12,7 +13,10 @@ if (process.argv[2] && process.argv[2] !== "--profile") {
 	process.exit(1);
 }
 
-const SCRAPING_DIR = `${process.env.HOME}/.cache/browser-tools`;
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE;
+const SCRAPING_DIR = process.platform === "win32"
+	? `${HOME_DIR}\\.cache\\browser-tools`
+	: `${HOME_DIR}/.cache/browser-tools`;
 
 // Check if already running on :9222
 try {
@@ -26,28 +30,44 @@ try {
 } catch {}
 
 // Setup profile directory
-execSync(`mkdir -p "${SCRAPING_DIR}"`, { stdio: "ignore" });
+mkdirSync(SCRAPING_DIR, { recursive: true });
 
 // Remove SingletonLock to allow new instance
 try {
-	execSync(`rm -f "${SCRAPING_DIR}/SingletonLock" "${SCRAPING_DIR}/SingletonSocket" "${SCRAPING_DIR}/SingletonCookie"`, { stdio: "ignore" });
+	rmSync(`${SCRAPING_DIR}${process.platform === "win32" ? "\\" : "/"}SingletonLock`, { force: true });
+	rmSync(`${SCRAPING_DIR}${process.platform === "win32" ? "\\" : "/"}SingletonSocket`, { force: true });
+	rmSync(`${SCRAPING_DIR}${process.platform === "win32" ? "\\" : "/"}SingletonCookie`, { force: true });
 } catch {}
 
 if (useProfile) {
 	console.log("Syncing profile...");
-	execSync(
-		`rsync -a --delete \
-			--exclude='SingletonLock' \
-			--exclude='SingletonSocket' \
-			--exclude='SingletonCookie' \
-			--exclude='*/Sessions/*' \
-			--exclude='*/Current Session' \
-			--exclude='*/Current Tabs' \
-			--exclude='*/Last Session' \
-			--exclude='*/Last Tabs' \
-			"${process.env.HOME}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
-		{ stdio: "pipe" },
-	);
+	if (process.platform === "win32") {
+		mkdirSync(SCRAPING_DIR, { recursive: true });
+		try {
+			execSync(
+				`robocopy "${process.env.LOCALAPPDATA}\\Google\\Chrome\\User Data" "${SCRAPING_DIR}" /E /R:0 /W:0 /NFL /NDL /NJH /NJS /NP /XF SingletonLock SingletonSocket SingletonCookie "Current Session" "Current Tabs" "Last Session" "Last Tabs" /XD Sessions`,
+				{ stdio: "ignore", shell: "cmd.exe" },
+			);
+		} catch (error) {
+			if (error.status >= 16) {
+				throw error;
+			}
+		}
+	} else {
+		execSync(
+			`rsync -a --delete \
+				--exclude='SingletonLock' \
+				--exclude='SingletonSocket' \
+				--exclude='SingletonCookie' \
+				--exclude='*/Sessions/*' \
+				--exclude='*/Current Session' \
+				--exclude='*/Current Tabs' \
+				--exclude='*/Last Session' \
+				--exclude='*/Last Tabs' \
+				"${HOME_DIR}/Library/Application Support/Google/Chrome/" "${SCRAPING_DIR}/"`,
+			{ stdio: "pipe" },
+		);
+	}
 }
 
 // Detect Chrome/Chromium path based on OS
