@@ -1,9 +1,0 @@
-[submodule "opencli"]
-	path = opencli
-	url = https://github.com/jackwener/opencli.git
-[submodule "wechat-cli"]
-	path = wechat-cli
-	url = https://github.com/systemxlabs/wechat-cli.git
-[submodule "skill-creator"]
-	path = skill-creator
-	url = https://github.com/anthropics/skills.git
