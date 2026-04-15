@@ -21,3 +21,4 @@ Personal agents and skills.
 | skill-creator | https://github.com/anthropics/skills/tree/main/skills/skill-creator | Anthropic skill creator template |
 | superpowers | https://github.com/obra/superpowers | Composable software development workflow skills |
 | frontend-design | https://github.com/anthropics/skills/tree/main/skills/frontend-design | Anthropic frontend design skill |
+| browser-use | https://github.com/browser-use/browser-use/tree/main/skills/browser-use | Automates browser interactions for web testing, form filling, screenshots, and data extraction |
